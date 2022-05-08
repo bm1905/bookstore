@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/bm1905/bookstore_users_api/domain/users"
+	"github.com/bm1905/bookstore_users_api/utils/dates_utils"
 	"github.com/bm1905/bookstore_users_api/utils/errors_utils"
 )
 
@@ -9,6 +10,9 @@ func CreateUser(user users.User) (*users.User, *errors_utils.RestError) {
 	if err := user.Validate(); err != nil {
 		return nil, err
 	}
+
+	user.DateCreated = dates_utils.GetNowDBFormat()
+	user.Status = users.StatusActive
 
 	if err := user.Save(); err != nil {
 		return nil, err
@@ -54,6 +58,12 @@ func GetUser(userId int64) (*users.User, *errors_utils.RestError) {
 	return result, nil
 }
 
-func SearchUser() (*users.User, error) {
-	return nil, nil
+func Search(status string) ([]users.User, *errors_utils.RestError) {
+	users := &users.User{}
+	return users.FindByStatus(status)
+}
+
+func GetAllUsers() ([]users.User, *errors_utils.RestError) {
+	users := &users.User{}
+	return users.GetAll()
 }
