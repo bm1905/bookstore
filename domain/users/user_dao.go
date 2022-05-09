@@ -3,6 +3,7 @@ package users
 import (
 	"fmt"
 	"github.com/bm1905/bookstore_users_api/datasources/sqlserver/users_db"
+	"github.com/bm1905/bookstore_users_api/logger"
 	"github.com/bm1905/bookstore_users_api/utils/errors_utils"
 	"github.com/bm1905/bookstore_users_api/utils/mssql_utils"
 )
@@ -19,6 +20,7 @@ const (
 func (user *User) Get() *errors_utils.RestError {
 	stmt, err := users_db.Client.Prepare(queryGetUser)
 	if err != nil {
+		logger.Error("error while preparing statement", err)
 		return errors_utils.NewInternalServerError(err.Error())
 	}
 	defer stmt.Close()
@@ -26,6 +28,7 @@ func (user *User) Get() *errors_utils.RestError {
 	result := stmt.QueryRow(user.Id)
 
 	if err := result.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status); err != nil {
+		logger.Error("database error", err)
 		return mssql_utils.ParseError(err)
 	}
 
@@ -35,12 +38,14 @@ func (user *User) Get() *errors_utils.RestError {
 func (user *User) GetAll() ([]User, *errors_utils.RestError) {
 	stmt, err := users_db.Client.Prepare(queryGetAllUsers)
 	if err != nil {
+		logger.Error("error while preparing statement", err)
 		return nil, errors_utils.NewInternalServerError(err.Error())
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query()
 	if err != nil {
+		logger.Error("database error", err)
 		return nil, errors_utils.NewInternalServerError(err.Error())
 	}
 
@@ -50,6 +55,7 @@ func (user *User) GetAll() ([]User, *errors_utils.RestError) {
 	for rows.Next() {
 		var user User
 		if err := rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status); err != nil {
+			logger.Error("database error", err)
 			return nil, mssql_utils.ParseError(err)
 		}
 		results = append(results, user)
@@ -65,6 +71,7 @@ func (user *User) GetAll() ([]User, *errors_utils.RestError) {
 func (user *User) Save() *errors_utils.RestError {
 	stmt, err := users_db.Client.Prepare(queryInsertUser)
 	if err != nil {
+		logger.Error("error while preparing statement", err)
 		return errors_utils.NewInternalServerError(err.Error())
 	}
 	defer stmt.Close()
@@ -72,6 +79,7 @@ func (user *User) Save() *errors_utils.RestError {
 	var lastInsertId int64
 	err = stmt.QueryRow(user.FirstName, user.LastName, user.Email, user.DateCreated, user.Password, user.Status).Scan(&lastInsertId)
 	if err != nil {
+		logger.Error("database error", err)
 		return mssql_utils.ParseError(err)
 	}
 
@@ -83,12 +91,14 @@ func (user *User) Save() *errors_utils.RestError {
 func (user *User) Update() *errors_utils.RestError {
 	stmt, err := users_db.Client.Prepare(queryUpdateUser)
 	if err != nil {
+		logger.Error("error while preparing statement", err)
 		return errors_utils.NewInternalServerError(err.Error())
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(user.FirstName, user.LastName, user.Id)
 	if err != nil {
+		logger.Error("database error", err)
 		return mssql_utils.ParseError(err)
 	}
 
@@ -98,12 +108,14 @@ func (user *User) Update() *errors_utils.RestError {
 func (user *User) Delete() *errors_utils.RestError {
 	stmt, err := users_db.Client.Prepare(queryDeleteUser)
 	if err != nil {
+		logger.Error("error while preparing statement", err)
 		return errors_utils.NewInternalServerError(err.Error())
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(user.Id)
 	if err != nil {
+		logger.Error("database error", err)
 		return mssql_utils.ParseError(err)
 	}
 
@@ -113,12 +125,14 @@ func (user *User) Delete() *errors_utils.RestError {
 func (user *User) FindByStatus(status string) ([]User, *errors_utils.RestError) {
 	stmt, err := users_db.Client.Prepare(queryGetUserByStatus)
 	if err != nil {
+		logger.Error("error while preparing statement", err)
 		return nil, errors_utils.NewInternalServerError(err.Error())
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(status)
 	if err != nil {
+		logger.Error("database error", err)
 		return nil, errors_utils.NewInternalServerError(err.Error())
 	}
 
@@ -128,6 +142,7 @@ func (user *User) FindByStatus(status string) ([]User, *errors_utils.RestError) 
 	for rows.Next() {
 		var user User
 		if err := rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status); err != nil {
+			logger.Error("database error", err)
 			return nil, mssql_utils.ParseError(err)
 		}
 		results = append(results, user)

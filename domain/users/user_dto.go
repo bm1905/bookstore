@@ -20,6 +20,8 @@ const (
 	StatusActive = "active"
 )
 
+type Users []User
+
 func (user *User) Validate() *errors_utils.RestError {
 	user.FirstName = strings.TrimSpace(user.FirstName)
 	if user.FirstName == "" {

@@ -2,17 +2,42 @@ package services
 
 import (
 	"github.com/bm1905/bookstore_users_api/domain/users"
+	"github.com/bm1905/bookstore_users_api/utils/crypto_utils"
 	"github.com/bm1905/bookstore_users_api/utils/dates_utils"
 	"github.com/bm1905/bookstore_users_api/utils/errors_utils"
 )
 
-func CreateUser(user users.User) (*users.User, *errors_utils.RestError) {
+var (
+	UserService userServiceInterface = &userService{}
+)
+
+type userService struct{}
+
+type userServiceInterface interface {
+	GetUser(int64) (*users.User, *errors_utils.RestError)
+	CreateUser(users.User) (*users.User, *errors_utils.RestError)
+	UpdateUser(bool, users.User) (*users.User, *errors_utils.RestError)
+	DeleteUser(int64) *errors_utils.RestError
+	SearchUser(string) (users.Users, *errors_utils.RestError)
+	GetAllUsers() (users.Users, *errors_utils.RestError)
+}
+
+func (s *userService) GetUser(userId int64) (*users.User, *errors_utils.RestError) {
+	result := &users.User{Id: userId}
+	if err := result.Get(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *userService) CreateUser(user users.User) (*users.User, *errors_utils.RestError) {
 	if err := user.Validate(); err != nil {
 		return nil, err
 	}
 
 	user.DateCreated = dates_utils.GetNowDBFormat()
 	user.Status = users.StatusActive
+	user.Password = crypto_utils.GetMd5(user.Password)
 
 	if err := user.Save(); err != nil {
 		return nil, err
@@ -20,14 +45,9 @@ func CreateUser(user users.User) (*users.User, *errors_utils.RestError) {
 	return &user, nil
 }
 
-func DeleteUser(userId int64) *errors_utils.RestError {
-	user := &users.User{Id: userId}
-	return user.Delete()
-}
-
-func UpdateUser(isPartial bool, user users.User) (*users.User, *errors_utils.RestError) {
-	current, err := GetUser(user.Id)
-	if err != nil {
+func (s *userService) UpdateUser(isPartial bool, user users.User) (*users.User, *errors_utils.RestError) {
+	current := &users.User{Id: user.Id}
+	if err := current.Get(); err != nil {
 		return nil, err
 	}
 
@@ -50,20 +70,17 @@ func UpdateUser(isPartial bool, user users.User) (*users.User, *errors_utils.Res
 	return current, nil
 }
 
-func GetUser(userId int64) (*users.User, *errors_utils.RestError) {
-	result := &users.User{Id: userId}
-	if err := result.Get(); err != nil {
-		return nil, err
-	}
-	return result, nil
+func (s *userService) DeleteUser(userId int64) *errors_utils.RestError {
+	user := &users.User{Id: userId}
+	return user.Delete()
 }
 
-func Search(status string) ([]users.User, *errors_utils.RestError) {
+func (s *userService) SearchUser(status string) (users.Users, *errors_utils.RestError) {
 	users := &users.User{}
 	return users.FindByStatus(status)
 }
 
-func GetAllUsers() ([]users.User, *errors_utils.RestError) {
+func (s *userService) GetAllUsers() (users.Users, *errors_utils.RestError) {
 	users := &users.User{}
 	return users.GetAll()
 }
